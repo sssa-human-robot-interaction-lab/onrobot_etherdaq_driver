@@ -79,7 +79,7 @@ int main ( int argc, char ** argv )
 	
 	if (r.status != 0)
 	{
-		ROS_ERROS("Error code: %d", r.status);
+		ROS_ERROR("Error code: %d", r.status);
 	}
 
 	Close(&socketHandle);
