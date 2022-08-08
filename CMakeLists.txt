@@ -3,6 +3,10 @@ project(onrobot_etherdaq_driver)
 
 find_package(catkin REQUIRED roscpp)
 
+catkin_package(
+  INCLUDE_DIRS include
+)
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
