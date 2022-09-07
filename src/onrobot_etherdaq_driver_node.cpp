@@ -1,5 +1,7 @@
 #include <onrobot_etherdaq_driver/onrobot_etherdaq_driver.hpp>
 
+#include <std_srvs/SetBool.h>
+
 static void SendCommand(SOCKET_HANDLE *socket, uint16 command, uint32 data)
 {
 	byte request[8];
@@ -8,6 +10,13 @@ static void SendCommand(SOCKET_HANDLE *socket, uint16 command, uint32 data)
 	*(uint32*)&request[4] = htonl(data); 
 	send(*socket, (const char *)request, 8, 0);
 	MySleep(5); // Wait a little just to make sure that the command has been processed by Ethernet DAQ
+}
+
+static bool BiasingCallback(std_srvs::SetBoolRequest& request, std_srvs::SetBoolResponse& response, SOCKET_HANDLE* socket)
+{
+  if(request.data) SendCommand(socket,COMMAND_BIAS,BIASING_ON);
+  else SendCommand(socket,COMMAND_BIAS,BIASING_OFF);
+	return true;
 }
 
 
@@ -47,8 +56,8 @@ int main ( int argc, char ** argv )
 	Response r;
 	unsigned int i;
 	SOCKET_HANDLE socketHandle;		/* Handle to UDP socket used to communicate with Ethernet DAQ. */
-	if (argc < 2) {
-		ROS_ERROR("Usage: %s IPADDRESS", argv[0] );
+	if (argc < 5) {
+		ROS_ERROR("Usage: %s IPADDRESS SPEED FILTER FRAMEID", argv[0] );
 		return -1;
 	}
 	if (Connect(&socketHandle, argv[1], UDP_PORT, SOCK_DGRAM, IPPROTO_UDP) != 0) {
@@ -59,13 +68,14 @@ int main ( int argc, char ** argv )
 		ROS_INFO("Connected to EtherDAQ");
 	}
 
-  ros::Publisher ethdaq_pub = nh.advertise<geometry_msgs::WrenchStamped>("/ethdaq_data",1000);
+  ros::ServiceServer biasing_ser = nh.advertiseService<std_srvs::SetBoolRequest,std_srvs::SetBoolResponse>("set_zero",boost::bind(&BiasingCallback, _1, _2, &socketHandle));
+  ros::Publisher ethdaq_pub = nh.advertise<geometry_msgs::WrenchStamped>("ethdaq_data",1000);
   
   geometry_msgs::WrenchStamped w;
-  w.header.frame_id = "hex_sensor_frame";
+  w.header.frame_id = argv[4];
 
-	SendCommand(&socketHandle, COMMAND_SPEED, SPEED);
-	SendCommand(&socketHandle, COMMAND_FILTER, FILTER);
+	SendCommand(&socketHandle, COMMAND_SPEED, atoi(argv[2]));
+	SendCommand(&socketHandle, COMMAND_FILTER, atoi(argv[3]));
 	SendCommand(&socketHandle, COMMAND_BIAS, BIASING_OFF);
 	SendCommand(&socketHandle, COMMAND_START, 0);
 
@@ -80,6 +90,10 @@ int main ( int argc, char ** argv )
 	if (r.status != 0)
 	{
 		ROS_ERROR("Error code: %d", r.status);
+	}
+	else
+	{
+		SendCommand(&socketHandle, COMMAND_STOP, 0);
 	}
 
 	Close(&socketHandle);
