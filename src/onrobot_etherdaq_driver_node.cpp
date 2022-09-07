@@ -85,6 +85,7 @@ int main ( int argc, char ** argv )
 		WrenchResponse(&r,&w);
     w.header.stamp = ros::Time::now();
     ethdaq_pub.publish(w);
+    ros::spinOnce();
 	}
 	
 	if (r.status != 0)
