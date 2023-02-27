@@ -19,7 +19,6 @@ static bool BiasingCallback(std_srvs::SetBoolRequest& request, std_srvs::SetBool
 	return true;
 }
 
-
 static Response Receive(SOCKET_HANDLE *socket)
 {
 	byte inBuffer[36];
@@ -53,38 +52,46 @@ int main ( int argc, char ** argv )
   ros::init(argc,argv,"onrobot_etherdaq_driver_node");
   ros::NodeHandle nh;
 
+  std::string ip_address, frame_id;
+  int speed, filter;
+
+  ros::param::param<std::string>("~ip_address",ip_address,"192.168.1.1");
+  ros::param::param("~speed",speed,2);
+  ros::param::param("~filter",filter,4);
+  ros::param::param<std::string>("~frame_id",frame_id,"ft_sensor_frame");
+
+  ROS_DEBUG("IP:%s",ip_address.c_str());
+  ROS_DEBUG("SPEED:%i",speed);
+  ROS_DEBUG("FILTER:%i",filter);
+  ROS_DEBUG("FRAME_ID:%s",frame_id.c_str());
+
 	Response r;
 	unsigned int i;
 	SOCKET_HANDLE socketHandle;		/* Handle to UDP socket used to communicate with Ethernet DAQ. */
-	if (argc < 5) {
-		ROS_ERROR("Usage: %s IPADDRESS SPEED FILTER FRAMEID", argv[0] );
+	if (Connect(&socketHandle, ip_address.c_str(), UDP_PORT, SOCK_DGRAM, IPPROTO_UDP) != 0) {
+		ROS_ERROR("Could not connect to device (IP:%s)",ip_address.c_str());
 		return -1;
-	}
-	if (Connect(&socketHandle, argv[1], UDP_PORT, SOCK_DGRAM, IPPROTO_UDP) != 0) {
-		ROS_ERROR("Could not connect to device...");
-		return -1;
-	}
-  else {
-		ROS_INFO("Connected to EtherDAQ");
 	}
 
   ros::ServiceServer biasing_ser = nh.advertiseService<std_srvs::SetBoolRequest,std_srvs::SetBoolResponse>("set_zero",boost::bind(&BiasingCallback, _1, _2, &socketHandle));
   ros::Publisher ethdaq_pub = nh.advertise<geometry_msgs::WrenchStamped>("ethdaq_data",1000);
   
   geometry_msgs::WrenchStamped w;
-  w.header.frame_id = argv[4];
+  w.header.frame_id = frame_id;
 
-	SendCommand(&socketHandle, COMMAND_SPEED, atoi(argv[2]));
-	SendCommand(&socketHandle, COMMAND_FILTER, atoi(argv[3]));
+	SendCommand(&socketHandle, COMMAND_SPEED, speed);
+	SendCommand(&socketHandle, COMMAND_FILTER, filter);
 	SendCommand(&socketHandle, COMMAND_BIAS, BIASING_OFF);
 	SendCommand(&socketHandle, COMMAND_START, 0);
 
 	while (r.status == 0 & ros::ok())
   {
 		r = Receive(&socketHandle);
+    if(w.header.seq == 0)ROS_INFO("Connected to EtherDAQ!");
 		WrenchResponse(&r,&w);
     w.header.stamp = ros::Time::now();
     ethdaq_pub.publish(w);
+    w.header.seq ++;
     ros::spinOnce();
 	}
 	
