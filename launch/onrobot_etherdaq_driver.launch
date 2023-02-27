@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="ip_address" default="192.168.1.1" doc="IP of the compute box"/>
+    <arg name="speed" default="2" doc="1000 / speed = Speed in Hz (max rate is 500 Hz)"/>
+    <arg name="filter" default="4" doc="0 = No filter; 1 = 500 Hz; 2 = 150 Hz; 3 = 50 Hz; 4 = 15 Hz; 5 = 5 Hz; 6 = 1.5 Hz"/>
+    <arg name="frame_id" default="ft_sensor_frame" doc="Frame id to fill WrenchStamped message"/>
+
+    <node pkg="onrobot_etherdaq_driver" type="onrobot_etherdaq_driver_node" name="onrobot_etherdaq_driver_node" output="screen">
+      <param name='ip_address' value='$(arg ip_address)'/>
+      <param name='speed' value='$(arg speed)'/>  
+      <param name='filter' value='$(arg filter)'/> 
+      <param name='frame_id' value='$(arg frame_id)'/> 
+    </node>
+
+</launch>
