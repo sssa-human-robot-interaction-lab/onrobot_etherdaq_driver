@@ -84,7 +84,7 @@ int main ( int argc, char ** argv )
 	SendCommand(&socketHandle, COMMAND_BIAS, BIASING_OFF);
 	SendCommand(&socketHandle, COMMAND_START, 0);
 
-	while (r.status == 0 & ros::ok())
+	while (r.status == 0 && ros::ok())
   {
 		r = Receive(&socketHandle);
     if(w.header.seq == 0)ROS_INFO("Connected to EtherDAQ!");
