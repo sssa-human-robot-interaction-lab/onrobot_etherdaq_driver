@@ -14,8 +14,17 @@ static void SendCommand(SOCKET_HANDLE *socket, uint16 command, uint32 data)
 
 static bool BiasingCallback(std_srvs::SetBoolRequest& request, std_srvs::SetBoolResponse& response, SOCKET_HANDLE* socket)
 {
-  if(request.data) SendCommand(socket,COMMAND_BIAS,BIASING_ON);
-  else SendCommand(socket,COMMAND_BIAS,BIASING_OFF);
+  if(request.data) 
+  {
+    SendCommand(socket,COMMAND_BIAS,BIASING_ON);
+    response.message = "Biasing ON";
+  }
+  else
+  { 
+    SendCommand(socket,COMMAND_BIAS,BIASING_OFF);
+    response.message = "Biasing OFF";
+  }
+  response.success = true;
 	return true;
 }
 
