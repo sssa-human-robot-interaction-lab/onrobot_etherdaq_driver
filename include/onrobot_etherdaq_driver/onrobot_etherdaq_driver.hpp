@@ -39,7 +39,6 @@ static int Connect(SOCKET_HANDLE * handle, const char * ipAddress, uint16 port, 
 	memcpy(&addr.sin_addr, he->h_addr_list[0], he->h_length);
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	ROS_INFO("Connecting to EtherDAQ...");
 	err = connect(*handle, (struct sockaddr *)&addr, sizeof(addr));
 	if (err < 0) {
 		return -3;

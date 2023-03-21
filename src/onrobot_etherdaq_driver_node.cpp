@@ -82,21 +82,23 @@ int main ( int argc, char ** argv )
 		return -1;
 	}
 
-  ros::ServiceServer biasing_ser = nh.advertiseService<std_srvs::SetBoolRequest,std_srvs::SetBoolResponse>("set_zero",boost::bind(&BiasingCallback, _1, _2, &socketHandle));
-  ros::Publisher ethdaq_pub = nh.advertise<geometry_msgs::WrenchStamped>("ethdaq_data",1000);
-  
-  geometry_msgs::WrenchStamped w;
-  w.header.frame_id = frame_id;
-
 	SendCommand(&socketHandle, COMMAND_SPEED, speed);
 	SendCommand(&socketHandle, COMMAND_FILTER, filter);
 	SendCommand(&socketHandle, COMMAND_BIAS, BIASING_OFF);
 	SendCommand(&socketHandle, COMMAND_START, 0);
 
+  ROS_WARN("Connecting to EtherDAQ...");
+  r = Receive(&socketHandle);
+  ROS_INFO("Connected to EtherDAQ!");
+  ros::ServiceServer biasing_ser = nh.advertiseService<std_srvs::SetBoolRequest,std_srvs::SetBoolResponse>("set_zero",boost::bind(&BiasingCallback, _1, _2, &socketHandle));
+  ros::Publisher ethdaq_pub = nh.advertise<geometry_msgs::WrenchStamped>("ethdaq_data",1000);
+
+  geometry_msgs::WrenchStamped w;
+  w.header.frame_id = frame_id;
+
 	while (r.status == 0 && ros::ok())
   {
 		r = Receive(&socketHandle);
-    if(w.header.seq == 0)ROS_INFO("Connected to EtherDAQ!");
 		WrenchResponse(&r,&w);
     w.header.stamp = ros::Time::now();
     ethdaq_pub.publish(w);
